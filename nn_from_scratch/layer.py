@@ -11,8 +11,8 @@ class Layer:
         # Initialize random weights and biases
         if random_seed is not None:
             np.random.seed(random_seed)
-        self.weights = np.random.rand(input_size, output_size)
-        self.biases = np.random.rand(1, output_size)
+        self.weights = np.random.randn(input_size, output_size) * 0.01
+        self.biases = np.zeros((1, output_size))
 
         # Set the activation function
         if activation_function in F.activation_functions:
@@ -30,8 +30,8 @@ class Layer:
         self.activation_function = F.activation_functions[activation_function]
 
     def reset_weights(self):
-        self.weights = np.random.rand(self.input_size, self.output_size)
-        self.biases = np.random.rand(1, self.output_size)
+        self.weights = np.random.randn(self.input_size, self.output_size) * 0.01
+        self.biases = np.zeros((1, self.output_size))
 
     # Forward pass through the layer
     def forward(self, inputs):
