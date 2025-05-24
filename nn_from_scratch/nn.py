@@ -129,5 +129,36 @@ class NN:
 
         return results
 
+    # Number of learnable parameters
+    def get_num_learnable_params(self):
+        total_params = 0
+        for layer in self.layers:
+            n_weights = layer.input_size * layer.output_size
+            n_biases = layer.output_size
+            layer_params = n_weights + n_biases
+            total_params += layer_params
+        print(f"\nTotal learnable parameters: {total_params}")
+        return total_params
 
-       
+    # Virtual RAM usage
+    def get_virtual_ram_usage(self, batch_size=1):
+        total_params = self.get_num_learnable_params()
+        total_activations = 0
+        for layer in self.layers:
+            total_activations += batch_size * layer.output_size
+
+        # Assume float32 (4 bytes per value)
+        param_ram_bytes = total_params * 4
+        activ_ram_bytes = total_activations * 4
+        total_ram_bytes = param_ram_bytes + activ_ram_bytes
+
+        print(f"Parameter RAM usage: {param_ram_bytes} bytes ({param_ram_bytes / (1024 ** 2):.2f} MB)")
+        print(f"Activation RAM usage (batch_size={batch_size}): {activ_ram_bytes} bytes ({activ_ram_bytes / (1024 ** 2):.2f} MB)")
+        print(f"Total estimated RAM usage: {total_ram_bytes} bytes ({total_ram_bytes / (1024 ** 2):.2f} MB)")
+
+
+        return {
+            "param_ram_bytes": param_ram_bytes,
+            "activ_ram_bytes": activ_ram_bytes,
+            "total_ram_bytes": total_ram_bytes
+        }
