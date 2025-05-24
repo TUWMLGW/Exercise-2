@@ -63,12 +63,14 @@ class NN:
     def train(self, inputs, targets, epochs, learning_rate, batch_size=32, verbose=False, visualize=False):
         n = inputs.shape[0]
         num_batches = int(np.ceil(n / batch_size))
+        losses = []
         for epoch in tqdm(range(epochs)):
             permutation = np.random.permutation(n)
             X = inputs[permutation]
             y = targets[permutation]
 
             epoch_loss = 0
+            total_samples = 0
             for i in range(num_batches):
                 start = i * batch_size
                 end = min((i + 1) * batch_size, n)
@@ -82,7 +84,9 @@ class NN:
                 prediction = self.predict(X_i)
 
                 loss = self.loss_function(y_i, prediction)
-                epoch_loss += loss
+                batch_size_actual = X_i.shape[0]
+                epoch_loss += loss * batch_size_actual
+                total_samples += batch_size_actual
                 d_loss = self.loss_function(y_i, prediction, derivative=True)
                 d_previous = d_loss
 
@@ -91,8 +95,16 @@ class NN:
                     layer.update_params(d_weights, d_biases, learning_rate)
                     d_previous = d_current
             
-            mean_epoch_loss = epoch_loss / n
-            print(f"Epoch {epoch+1}/{epochs} ============ Loss: {mean_epoch_loss:.3f}")
+            mean_epoch_loss = epoch_loss / total_samples
+            losses.append(mean_epoch_loss)
+            if verbose:
+                print(f"Epoch {epoch+1}/{epochs} ============ Loss: {mean_epoch_loss:.3f}")
+        if visualize:
+            plt.plot(range(1, epochs + 1), losses, 'b-')
+            plt.xlabel('Epochs')
+            plt.ylabel('Loss')
+            plt.title('Training Loss Over Epochs')
+            plt.show()
 
     def evaluate(self, inputs, targets):
 
