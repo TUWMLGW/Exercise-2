@@ -43,7 +43,9 @@ class Layer:
     # Backward pass through the layer
     def backward(self, d_previous):
         try:
-            d_weighted_sum = d_previous * self.activation_function(self.weighted_sum, derivative=True) # dL/dZ
+            d_weighted_sum = d_previous * self.activation_function(
+                self.weighted_sum, derivative=True
+                ) # dL/dZ
         except NotImplementedError: # When using softmax
             d_weighted_sum = d_previous
 
