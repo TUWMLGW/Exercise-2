@@ -1,5 +1,5 @@
 import numpy as np
-import nn.functions as F
+import nn_from_scratch.functions as F
 
 class Layer:
     
@@ -31,7 +31,7 @@ class Layer:
 
     def reset_weights(self):
         self.weights = np.random.rand(self.input_size, self.output_size)
-        self.biases = np.random.rand((1, self.output_size))
+        self.biases = np.random.rand(1, self.output_size)
 
     # Forward pass through the layer
     def forward(self, inputs):

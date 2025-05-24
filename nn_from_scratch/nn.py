@@ -2,8 +2,8 @@ import numpy as np
 from tqdm import tqdm
 from typing import List
 
-from nn.layer import Layer
-import nn.functions as F
+from nn_from_scratch.layer import Layer
+import nn_from_scratch.functions as F
 import matplotlib.pyplot as plt
 
 class NN:
@@ -87,7 +87,7 @@ class NN:
                 d_previous = d_loss
 
                 for layer in self.layers[::-1]:
-                    d_weights, d_biases, d_current = layer.backward(d_loss)
+                    d_weights, d_biases, d_current = layer.backward(d_previous)
                     layer.update_params(d_weights, d_biases, learning_rate)
                     d_previous = d_current
             
