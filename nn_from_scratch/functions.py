@@ -55,26 +55,26 @@ def mean_squared_error(y_true: np.ndarray, y_pred: np.ndarray, derivative=False)
     if y_true.shape != y_pred.shape:
         raise ValueError(f"y_true shape of {y_true.shape} and y_pred shape of {y_pred.shape} must match.")
     if derivative:
-        return (y_pred - y_true)#2 / y_true.size * (y_pred - y_true) 
+        return (y_pred - y_true).astype(np.float32)
     else:
-        return np.mean((y_true - y_pred) ** 2)
+        return (np.mean((y_true - y_pred) ** 2)).astype(np.float32)
 
 def mean_absolute_error(y_true: np.ndarray, y_pred: np.ndarray, derivative=False):
     if y_true.shape != y_pred.shape:
         raise ValueError(f"y_true shape of {y_true.shape} and y_pred shape of {y_pred.shape} must match.")
     if derivative:
-        return np.sign(y_pred - y_true) / y_true.size
+        return np.sign(y_pred - y_true).astype(np.float32)
     else:
-        return np.mean(np.abs(y_true - y_pred))
+        return np.mean(np.abs(y_true - y_pred)).astype(np.float32)
 
 def cross_entropy(y_true: np.ndarray, y_pred: np.ndarray, derivative=False):
     if y_true.shape != y_pred.shape:
         raise ValueError(f"y_true shape of {y_true.shape} and y_pred shape of {y_pred.shape} must match.")
     if derivative: # only combined with SOFTMAX activation function
-        return (y_pred - y_true) / y_true.shape[0]
+        return ((y_pred - y_true) / y_true.shape[0]).astype(np.float32)
     else:
         y_pred = np.clip(y_pred, 1e-12, 1 - 1e-12) # Small epsilon to prevent log(0)
-        return -np.sum(y_true * np.log(y_pred)) / y_true.shape[0]
+        return (-np.sum(y_true * np.log(y_pred)) / y_true.shape[0]).astype(np.float32)
 
 loss_functions = {
     'mean_squared_error': mean_squared_error,
@@ -114,3 +114,82 @@ def calculate_classification_metrics(predictions, targets, num_classes) :
     f1 = np.mean(current_f1_scores) if current_f1_scores else 0
 
     return precision, recall, f1
+
+# SKLEARN: Functions to get the number of parameters and RAM usage
+import numpy as np
+
+def sklearn_get_num_learnable_params(mlp):
+    """Returns the total number of learnable parameters in a scikit-learn MLP."""
+    total = 0
+    for coef, intercept in zip(mlp.coefs_, mlp.intercepts_):
+        total += coef.size + intercept.size
+    print(f"Total learnable parameters: {total}")
+    return total
+
+def sklearn_get_virtual_ram_usage(mlp, batch_size, dtype=np.float32, training=False):
+    """Estimates RAM usage for parameters and activations in a scikit-learn MLP."""
+    param_bytes = 0
+    for coef, intercept in zip(mlp.coefs_, mlp.intercepts_):
+        param_bytes += coef.size * np.dtype(dtype).itemsize
+        param_bytes += intercept.size * np.dtype(dtype).itemsize
+
+    layer_sizes = [mlp.coefs_[0].shape[0]] + [coef.shape[1] for coef in mlp.coefs_]
+    activation_elements = batch_size * sum(layer_sizes)
+    activ_bytes = activation_elements * np.dtype(dtype).itemsize
+
+    if training:
+        param_bytes *= 2
+        activ_bytes *= 2
+    
+    total_ram_bytes = param_bytes + activ_bytes
+
+    print(f"Parameter RAM usage: {param_bytes} bytes ({param_bytes / (1024 ** 2):.2f} MB)")
+    print(f"Activation RAM usage (batch_size={batch_size}): {activ_bytes} bytes ({activ_bytes / (1024 ** 2):.2f} MB)")
+    print(f"Total estimated RAM usage: {total_ram_bytes} bytes ({total_ram_bytes / (1024 ** 2):.2f} MB)")
+
+
+    return {
+        "param_ram_bytes": param_bytes,
+        "activ_ram_bytes": activ_bytes,
+        "total_ram_bytes": param_bytes + activ_bytes
+    }
+
+# PyTorch: Functions to get the number of parameters and RAM usage
+import torch
+
+def torch_get_num_learnable_params(model):
+    """Returns the total number of learnable parameters in a PyTorch model."""
+    total = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    print(f"Total learnable parameters: {total}")
+    return total
+
+def torch_get_virtual_ram_usage(model, batch_size, input_size, dtype=torch.float32, training=False):
+    """Estimates RAM usage for parameters and activations in a PyTorch model."""
+    param_bytes = sum(p.numel() * p.element_size() for p in model.parameters() if p.requires_grad)
+
+    dummy_input = torch.zeros((batch_size,) + input_size, dtype=dtype)
+    activ_elements = dummy_input.numel()
+    x = dummy_input
+    for layer in model.children():
+        try:
+            x = layer(x)
+            activ_elements += x.numel()
+        except Exception:
+            continue
+    activ_bytes = activ_elements * torch.finfo(dtype).bits // 8
+
+    if training:
+        param_bytes *= 2
+        activ_bytes *= 2
+
+    total_ram_bytes = param_bytes + activ_bytes
+
+    print(f"Parameter RAM usage: {param_bytes} bytes ({param_bytes / (1024 ** 2):.2f} MB)")
+    print(f"Activation RAM usage (batch_size={batch_size}): {activ_bytes} bytes ({activ_bytes / (1024 ** 2):.2f} MB)")
+    print(f"Total estimated RAM usage: {total_ram_bytes} bytes ({total_ram_bytes / (1024 ** 2):.2f} MB)")
+
+    return {
+        "param_ram_bytes": param_bytes,
+        "activ_ram_bytes": activ_bytes,
+        "total_ram_bytes": param_bytes + activ_bytes
+    }

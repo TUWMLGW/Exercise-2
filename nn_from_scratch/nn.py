@@ -93,6 +93,7 @@ class NN:
                 for layer in self.layers[::-1]:
                     d_weights, d_biases, d_current = layer.backward(d_previous)
                     layer.update_params(d_weights, d_biases, learning_rate)
+
                     d_previous = d_current
             
             mean_epoch_loss = epoch_loss / total_samples
@@ -127,38 +128,42 @@ class NN:
         results["recall"] = recall
         results["f1_score"] = f1_score
 
+        print(f"Loss: {results['loss']:.4f}")
+        print(f"Accuracy: {results['accuracy']:.4f}")
+        print(f"Precision: {results['precision']:.4f}")
+        print(f"Recall: {results['recall']:.4f}")
+        print(f"F1 Score: {results['f1_score']:.4f}")
+
         return results
 
-    # Number of learnable parameters
+    # Number of learnable parameters = total count of weights and biases in the network
     def get_num_learnable_params(self):
-        total_params = 0
+        param_count = 0
         for layer in self.layers:
-            n_weights = layer.input_size * layer.output_size
-            n_biases = layer.output_size
-            layer_params = n_weights + n_biases
-            total_params += layer_params
-        print(f"\nTotal learnable parameters: {total_params}")
-        return total_params
+            param_count += layer.get_num_params()
+        print(f"Total learnable parameters: {param_count}")
+        return param_count
 
-    # Virtual RAM usage
-    def get_virtual_ram_usage(self, batch_size=1):
-        total_params = self.get_num_learnable_params()
-        total_activations = 0
+    # Virtual RAM usage (in bytes, when training or after NN initialization)
+    def get_virtual_ram_usage(self, batch_size, training=False):
+        param_ram_bytes = 0
+        activations_ram_bytes = batch_size * self.layers[0].input_size * 4
         for layer in self.layers:
-            total_activations += batch_size * layer.output_size
+            param_ram_bytes += layer.get_ram_usage()
+            activations_ram_bytes += batch_size * layer.output_size * 4
 
-        # Assume float32 (4 bytes per value)
-        param_ram_bytes = total_params * 4
-        activ_ram_bytes = total_activations * 4
-        total_ram_bytes = param_ram_bytes + activ_ram_bytes
+        if training:
+            param_ram_bytes *= 2  # During training, gradients for params are also stored
+            activations_ram_bytes *= 2  # During training, gradients for activations are also stored
+
+        total_ram_bytes = param_ram_bytes + activations_ram_bytes
 
         print(f"Parameter RAM usage: {param_ram_bytes} bytes ({param_ram_bytes / (1024 ** 2):.2f} MB)")
-        print(f"Activation RAM usage (batch_size={batch_size}): {activ_ram_bytes} bytes ({activ_ram_bytes / (1024 ** 2):.2f} MB)")
+        print(f"Activation RAM usage (batch_size={batch_size}): {activations_ram_bytes} bytes ({activations_ram_bytes / (1024 ** 2):.2f} MB)")
         print(f"Total estimated RAM usage: {total_ram_bytes} bytes ({total_ram_bytes / (1024 ** 2):.2f} MB)")
-
 
         return {
             "param_ram_bytes": param_ram_bytes,
-            "activ_ram_bytes": activ_ram_bytes,
+            "activ_ram_bytes": activations_ram_bytes,
             "total_ram_bytes": total_ram_bytes
         }
