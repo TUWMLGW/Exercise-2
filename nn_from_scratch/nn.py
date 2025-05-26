@@ -145,22 +145,30 @@ class NN:
         return param_count
 
     # Virtual RAM usage (in bytes, when training or after NN initialization)
-    def get_virtual_ram_usage(self, batch_size, training=False):
+    def get_virtual_ram_usage(self, batch_size=None, training=False):
+        if training and batch_size is None:
+            raise ValueError("batch_size must be set when training=True")
+
         param_ram_bytes = 0
-        activations_ram_bytes = batch_size * self.layers[0].input_size * 4
         for layer in self.layers:
             param_ram_bytes += layer.get_ram_usage()
-            activations_ram_bytes += batch_size * layer.output_size * 4
 
+        activations_ram_bytes = 0
         if training:
             param_ram_bytes *= 2  # During training, gradients for params are also stored
-            activations_ram_bytes *= 2  # During training, gradients for activations are also stored
-
+            activations_ram_bytes = batch_size * self.layers[0].input_size * 4
+            for layer in self.layers:
+                activations_ram_bytes += batch_size * layer.output_size * 4 * 2  # 4 bytes for float32, multiplied by 2 for training (activations and gradients)
+            
         total_ram_bytes = param_ram_bytes + activations_ram_bytes
 
-        print(f"Parameter RAM usage: {param_ram_bytes} bytes ({param_ram_bytes / (1024 ** 2):.2f} MB)")
-        print(f"Activation RAM usage (batch_size={batch_size}): {activations_ram_bytes} bytes ({activations_ram_bytes / (1024 ** 2):.2f} MB)")
-        print(f"Total estimated RAM usage: {total_ram_bytes} bytes ({total_ram_bytes / (1024 ** 2):.2f} MB)")
+        if training:
+            print(f"Parameter RAM usage: {param_ram_bytes} bytes ({param_ram_bytes / (1024 ** 2):.2f} MB)")
+            print(f"Activation RAM usage (batch_size={batch_size}): {activations_ram_bytes} bytes ({activations_ram_bytes / (1024 ** 2):.2f} MB)")
+            print(f"Total estimated RAM usage: {total_ram_bytes} bytes ({total_ram_bytes / (1024 ** 2):.2f} MB)")
+
+        else:
+            print(f"Total estimated RAM usage: {total_ram_bytes} bytes ({total_ram_bytes / (1024 ** 2):.2f} MB)")
 
         return {
             "param_ram_bytes": param_ram_bytes,
