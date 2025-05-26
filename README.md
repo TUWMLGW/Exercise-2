@@ -24,4 +24,53 @@ Each approach is applied to two distinct datasets, experimenting with different 
 
 ---
 
+## 🤯 How to Use the Custom NN from Scratch
+
+1. **Define Layers**
+
+```python
+from nn_from_scratch.layer import Layer
+
+layers = [
+    Layer(input_size=4, output_size=8, activation_function='relu'),
+    Layer(input_size=8, output_size=3, activation_function='softmax')
+]
+```
+2. **Initialize the Neural Network**
+```python
+from nn_from_scratch.nn import NN
+
+model = NN(
+    layers=layers,
+    num_classes=3,
+    activation_function='relu',      # Default for layers without explicit activation
+    loss_function='cross_entropy'    # Must be defined in functions.py
+)
+```
+4. **Train the Model**
+```python
+model.train(
+    inputs=X_train,
+    targets=y_train,
+    epochs=100,
+    learning_rate=0.01,
+    batch_size=32,
+    verbose=True,
+    visualize=True
+)
+```
+6. **Make Predictions**
+```python
+predictions = model.predict(X_test)
+```
+8. **Evaluate**
+```python
+model.evaluate(X_test, y_test)
+```
+10. **Utilities**
+```python
+model.get_num_learnable_params()
+model.get_virtual_ram_usage(batch_size=32, training=True)
+```
+
 *Made for the Machine Learning course, TU, Summer Semester 2025.*
