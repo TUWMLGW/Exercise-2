@@ -7,9 +7,19 @@ import nn_from_scratch.functions as F
 import matplotlib.pyplot as plt
 
 class NN:
-
-    def __init__(self, layers: List[Layer], num_classes, activation_function: str, loss_function: str):
+    """
+    A feedforward neural network model class that supports multiple layers of type Layer.
+    It allows for setting activation and loss functions, training the model, making predictions,
+    evaluating performance, and managing the model's parameters and RAM usage.
+    Attributes:
+        layers (List[Layer]): List of layers of type Layer in the NN (see layer.py).
+        num_classes (int): Number of classes for multi-classification tasks (1 if binary).
+        activation_function (str): Activation function used in the layers (see functions.py).
+        loss_function (str): Loss function used for training (see functions.py).
+    """
+    def __init__(self, layers: List[Layer], num_classes=1, activation_function: str, loss_function: str):
         
+        # Check if the provided layers are valid
         for i in range(1, len(layers)):
             if layers[i].input_size != layers[i - 1].output_size:
                 raise ValueError(f"Input size of layer {i} does not match output size of layer {i - 1}.")
@@ -34,6 +44,7 @@ class NN:
             raise ValueError(f"Sorry, the loss function '{loss_function}' is not yet supported.")
 
     def add_layer(self, layer):
+        """Adds a new layer"""
         if not isinstance(layer, Layer):
             raise ValueError("Layer should be an instance of the respective class.")
         if not self.layers:
@@ -46,25 +57,30 @@ class NN:
 
     # Functions to manage the layer's properties
     def set_activation_function(self, activation_function):
+        """Sets the activation function for all layers."""
         self.activation_function = activation_function
         for layer in self.layers:
             layer.set_activation_function(activation_function)
 
     def reset_weights(self):
+        """Resets the weights and biases of all layers."""
         for layer in self.layers:
             layer.reset_weights()
 
     def predict(self, inputs):
+        """Makes predictions looping through all layers' forward passes."""
         outputs = inputs
         for layer in self.layers:
             outputs = layer.forward(outputs)
         return outputs
 
     def train(self, inputs, targets, epochs, learning_rate, batch_size=32, verbose=False, visualize=False):
+        """Trains the neural network using the provided inputs and targets, in batches."""
         n = inputs.shape[0]
         num_batches = int(np.ceil(n / batch_size))
         losses = []
         for epoch in tqdm(range(epochs)):
+            # Shuffle data
             permutation = np.random.permutation(n)
             X = inputs[permutation]
             y = targets[permutation]
@@ -81,8 +97,10 @@ class NN:
                 if X_i.shape[0] == 0:
                     continue
 
+                # Forward pass
                 prediction = self.predict(X_i)
 
+                # Loss calculation
                 loss = self.loss_function(y_i, prediction)
                 batch_size_actual = X_i.shape[0]
                 epoch_loss += loss * batch_size_actual
@@ -90,6 +108,7 @@ class NN:
                 d_loss = self.loss_function(y_i, prediction, derivative=True)
                 d_previous = d_loss
 
+                # Backward pass
                 for layer in self.layers[::-1]:
                     d_weights, d_biases, d_current = layer.backward(d_previous)
                     layer.update_params(d_weights, d_biases, learning_rate)
@@ -108,7 +127,7 @@ class NN:
             plt.show()
 
     def evaluate(self, inputs, targets):
-
+        """Evaluates the performance on the provided inputs and targets."""
         results = {
             "loss": None,
             "accuracy": None,
@@ -138,6 +157,7 @@ class NN:
 
     # Number of learnable parameters = total count of weights and biases in the network
     def get_num_learnable_params(self):
+        """Computes the total number of learnable parameters in the instantiated net"""
         param_count = 0
         for layer in self.layers:
             param_count += layer.get_num_params()
@@ -146,6 +166,7 @@ class NN:
 
     # Virtual RAM usage (in bytes, when training or after NN initialization)
     def get_virtual_ram_usage(self, batch_size=None, training=False):
+        """Computes RAM usage estimates for the instantiated net, when training or not"""
         if training and batch_size is None:
             raise ValueError("batch_size must be set when training=True")
 

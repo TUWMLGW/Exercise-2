@@ -1,5 +1,15 @@
 import numpy as np
 
+"""
+This file is intended to work with objects of type Layer and NN as specified in the directory.
+It provides:
+- functions for activations for use in each layer (e.g. sigmoid, relu, tanh, softmax),
+- functions for loss calculation (e.g. mean_squared_error, mean_absolute_error, cross_entropy),
+- helper functions for model evaluation (precision, recall, f1),
+- helper functions for estimating learnable parameter counts and RAM usage (for sklearn and PyTorch)
+- helper functions for one-hot encoding of categorical data
+"""
+
 # Data Preparation
 def one_hot_encoding(column, num_classes, dtype=float):
     if not isinstance(column, np.ndarray):
@@ -94,16 +104,19 @@ def calculate_classification_metrics(predictions, targets, num_classes) :
         false_positives = np.sum((targets != c) & (predictions == c)) 
         false_negatives = np.sum((targets == c) & (predictions != c)) 
 
+        # Precision
         current_precision = 0
         if (true_positives + false_positives) > 0:
             current_precision = true_positives / (true_positives + false_positives)
         current_precisions.append(current_precision)
 
+        # Recall
         current_recall = 0
         if (true_positives + false_negatives) > 0:
             current_recall = true_positives / (true_positives + false_negatives)
         current_recalls.append(current_recall)
 
+        # F1 Score
         current_f1 = 0.0
         if (current_precision + current_recall) > 0:
             current_f1 = 2 * (current_precision * current_recall) / (current_precision + current_recall)
@@ -116,14 +129,12 @@ def calculate_classification_metrics(predictions, targets, num_classes) :
     return precision, recall, f1
 
 # SKLEARN: Functions to get the number of parameters and RAM usage
-import numpy as np
-
 def sklearn_get_num_learnable_params(mlp):
     """Returns the total number of learnable parameters in a scikit-learn MLP."""
     total = 0
     for coef, intercept in zip(mlp.coefs_, mlp.intercepts_):
         total += coef.size + intercept.size
-    print(f"Total learnable parameters: {total}")
+    print(f"Total learnable parameters sklearn MLP: {total}")
     return total
 
 def sklearn_get_virtual_ram_usage(mlp, batch_size, dtype=np.float32, training=False):
@@ -143,9 +154,9 @@ def sklearn_get_virtual_ram_usage(mlp, batch_size, dtype=np.float32, training=Fa
     
     total_ram_bytes = param_bytes + activ_bytes
 
-    print(f"Parameter RAM usage: {param_bytes} bytes ({param_bytes / (1024 ** 2):.2f} MB)")
-    print(f"Activation RAM usage (batch_size={batch_size}): {activ_bytes} bytes ({activ_bytes / (1024 ** 2):.2f} MB)")
-    print(f"Total estimated RAM usage: {total_ram_bytes} bytes ({total_ram_bytes / (1024 ** 2):.2f} MB)")
+    print(f"Parameter RAM usage sklearn MLP: {param_bytes} bytes ({param_bytes / (1024 ** 2):.2f} MB)")
+    print(f"Activation RAM usage sklearn MLP (batch_size={batch_size}): {activ_bytes} bytes ({activ_bytes / (1024 ** 2):.2f} MB)")
+    print(f"Total estimated RAM usage sklearn MLP: {total_ram_bytes} bytes ({total_ram_bytes / (1024 ** 2):.2f} MB)")
 
 
     return {
@@ -160,7 +171,7 @@ import torch
 def torch_get_num_learnable_params(model):
     """Returns the total number of learnable parameters in a PyTorch model."""
     total = sum(p.numel() for p in model.parameters() if p.requires_grad)
-    print(f"Total learnable parameters: {total}")
+    print(f"Total learnable parameters PyTorch: {total}")
     return total
 
 def torch_get_virtual_ram_usage(model, batch_size, input_size, dtype=torch.float32, training=False):
@@ -184,9 +195,9 @@ def torch_get_virtual_ram_usage(model, batch_size, input_size, dtype=torch.float
 
     total_ram_bytes = param_bytes + activ_bytes
 
-    print(f"Parameter RAM usage: {param_bytes} bytes ({param_bytes / (1024 ** 2):.2f} MB)")
-    print(f"Activation RAM usage (batch_size={batch_size}): {activ_bytes} bytes ({activ_bytes / (1024 ** 2):.2f} MB)")
-    print(f"Total estimated RAM usage: {total_ram_bytes} bytes ({total_ram_bytes / (1024 ** 2):.2f} MB)")
+    print(f"Parameter RAM usage PyTorch: {param_bytes} bytes ({param_bytes / (1024 ** 2):.2f} MB)")
+    print(f"Activation RAM usage PyTorch (batch_size={batch_size}): {activ_bytes} bytes ({activ_bytes / (1024 ** 2):.2f} MB)")
+    print(f"Total estimated RAM usage PyTorch: {total_ram_bytes} bytes ({total_ram_bytes / (1024 ** 2):.2f} MB)")
 
     return {
         "param_ram_bytes": param_bytes,
